@@ -1,0 +1,83 @@
+﻿@inject HttpClient httpClient
+@inject IJSRuntime JsRunTime 
+
+<div class="modal fade show d-block bg-half-black" id="exampleModal" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="staticBackdropLabel">New task</h5>
+				<button @onclick="() => OnClickButtonClose.InvokeAsync(_createdTask)" type="button" class="btn-close" aria-label="Close"></button>
+			</div>
+
+			<EditForm Model="_taskToCreate" OnValidSubmit="CreateTaskAsync">
+				<DataAnnotationsValidator />
+				<ValidationSummary />
+				<div class="modal-body">
+
+					<div class="mb-3">
+						<label for="name" class="form-label">Name</label>
+						<InputText @bind-Value="_taskToCreate.Name" class="form-control" id="name" />
+					</div>
+
+					<div class="mb-3">
+						<label for="desc" class="form-label">Description</label>
+						<InputTextArea @bind-Value="_taskToCreate.Desc" class="form-control" id="desc" />
+					</div>
+
+					<div class="mb-3">
+						<label for="TAGS" class="form-label">TAGS</label>
+						<InputText type="text" oninput="this.value = this.value.toUpperCase()" class="form-control text-uppercase" @bind-Value="_taskToCreate.Tegs" id="TAGS" />
+					</div> 
+
+					
+				</div>
+				<div class="modal-footer">
+					<button @onclick="() => OnClickButtonClose.InvokeAsync(_createdTask)" type="button" class="btn btn-secondary">Close</button>
+					<button type="submit" class="btn btn-success">Create</button>
+				</div>
+			</EditForm>
+		</div>
+	</div>
+</div>
+
+@code {
+	[Parameter]
+	public EventCallback<Todo?> OnClickButtonClose { get; set; }
+
+	[Parameter]
+	public EventCallback<List<string>> GetTegCreate { get; set; }
+
+	private List<string> listOfTags;
+
+	private Todo _taskToCreate = new()
+	{
+			TodoId = 0,
+			Name = "Name task",
+			Desc = "Description task",
+			Tegs = "TAGS"
+	};
+
+	private Todo? _createdTask = null;
+
+	private async Task CreateTaskAsync()
+	{
+		HttpResponseMessage response = await httpClient.PostAsJsonAsync("https://localhost:7066/todo/create", _taskToCreate);
+
+		if (response.IsSuccessStatusCode)
+		{
+			_createdTask = await response.Content.ReadFromJsonAsync<Todo>();
+
+			if (_createdTask != null)
+			{
+				await JsRunTime.InvokeVoidAsync("alert", "Successful!");
+				OnClickButtonClose.InvokeAsync(_createdTask);
+				GetTegCreate.InvokeAsync(listOfTags);
+			}
+		}
+		else
+		{
+			await JsRunTime.InvokeVoidAsync("alert", "Fail!");
+			OnClickButtonClose.InvokeAsync(_createdTask);
+		}
+	}
+}
